@@ -21,6 +21,7 @@ import 'package:aves/widgets/dialogs/entry_editors/edit_description_dialog.dart'
 import 'package:aves/widgets/dialogs/entry_editors/edit_location_dialog.dart';
 import 'package:aves/widgets/dialogs/entry_editors/edit_rating_dialog.dart';
 import 'package:aves/widgets/dialogs/entry_editors/remove_metadata_dialog.dart';
+import 'package:aves/widgets/common/behaviour/routes.dart';
 import 'package:aves/widgets/dialogs/entry_editors/tag_editor_page.dart';
 import 'package:aves_model/aves_model.dart';
 import 'package:material_ui/material_ui.dart';
@@ -92,7 +93,7 @@ mixin EntryEditorMixin {
     );
     final filtersByEntry =
         await Navigator.maybeOf(context)?.push<Map<AvesEntry, Set<CollectionFilter>>>(
-          MaterialPageRoute(
+          DirectMaterialPageRoute(
             settings: const RouteSettings(name: TagEditorPage.routeName),
             builder: (context) => TagEditorPage(
               tagsByEntry: oldTagsByEntry,

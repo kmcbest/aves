@@ -2,6 +2,7 @@ import 'package:aves/model/entry/entry.dart';
 import 'package:aves/model/entry/extensions/catalog.dart';
 import 'package:aves/model/filters/container/tag_group.dart';
 import 'package:aves/model/filters/covered/tag.dart';
+import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/metadata/catalog.dart';
 import 'package:aves/model/source/analysis_controller.dart';
 import 'package:aves/model/source/collection_source.dart';
@@ -16,12 +17,22 @@ mixin TagMixin on SourceBase {
 
   bool _tagsDirty = true;
   List<String> _sortedTags = List.unmodifiable([]);
+  List<CollectionFilter> _topTagFilters = List.unmodifiable([]);
+
+  bool get tagsDirty => _tagsDirty;
 
   List<String> get sortedTags {
     if (_tagsDirty) {
       _computeTags();
     }
     return _sortedTags;
+  }
+
+  List<CollectionFilter> get topTagFilters {
+    if (_tagsDirty) {
+      _computeTags();
+    }
+    return _topTagFilters;
   }
 
   set sortedTags(List<String> tags) {
@@ -106,11 +117,25 @@ mixin TagMixin on SourceBase {
   }
 
   void _computeTags() {
-    final updatedTags = visibleEntries.expand((entry) => entry.tags).toSet().toList()..sort(compareAsciiUpperCaseNatural);
+    final entryCountByTag = <String, int>{};
+    for (final entry in visibleEntries) {
+      for (final tag in entry.tags) {
+        entryCountByTag[tag] = (entryCountByTag[tag] ?? 0) + 1;
+      }
+    }
+    final updatedTags = entryCountByTag.keys.toList()..sort(compareAsciiUpperCaseNatural);
     if (!listEquals(updatedTags, _sortedTags)) {
       _sortedTags = List.unmodifiable(updatedTags);
       eventBus.fire(TagsChangedEvent());
     }
+
+    final sortedTopTags = entryCountByTag.entries.toList()
+      ..sort((a, b) {
+        final c = b.value.compareTo(a.value);
+        if (c != 0) return c;
+        return compareAsciiUpperCaseNatural(a.key, b.key);
+      });
+    _topTagFilters = List.unmodifiable(sortedTopTags.map((e) => TagFilter(e.key)));
     _tagsDirty = false;
   }
 

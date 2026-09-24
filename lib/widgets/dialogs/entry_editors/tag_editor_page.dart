@@ -35,7 +35,7 @@ class _TagEditorPageState extends State<TagEditorPage> {
   final FocusNode _newTagTextFocusNode = FocusNode();
   final ValueNotifier<String?> _expandedSectionNotifier = ValueNotifier(null);
   late final Map<AvesEntry, Set<CollectionFilter>> filtersByEntry;
-  late final List<CollectionFilter> _topTags;
+  List<CollectionFilter> _topTags = [];
   final List<CollectionFilter> _userAddedFilters = [];
 
   static final List<PlaceholderFilter> _placeholders = [
@@ -240,13 +240,18 @@ class _TagEditorPageState extends State<TagEditorPage> {
   }
 
   void _initTopTags() {
-    final Map<String, int> entryCountByTag = {};
-    final visibleEntries = context.read<CollectionSource?>()?.visibleEntries;
-    visibleEntries?.forEach((entry) {
-      entry.tags.forEach((tag) => entryCountByTag[tag] = (entryCountByTag[tag] ?? 0) + 1);
-    });
-    List<MapEntry<CollectionFilter, int>> sortedTopTags = _sortCurrentTags(entryCountByTag.map((key, value) => MapEntry(TagFilter(key), value)));
-    _topTags = sortedTopTags.map((kv) => kv.key).toList();
+    final source = context.read<CollectionSource?>();
+    if (source == null) return;
+    if (!source.tagsDirty) {
+      _topTags = source.topTagFilters;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _topTags = source.topTagFilters;
+        });
+      });
+    }
   }
 
   List<MapEntry<CollectionFilter, int>> _sortCurrentTags(Map<CollectionFilter, int> entryCountByTag) {
