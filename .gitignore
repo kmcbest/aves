@@ -53,3 +53,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Local profiling and debug artifacts
+*.docx
+startup_profile.json
+/*.png

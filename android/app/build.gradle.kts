@@ -60,7 +60,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = packageName
+        applicationId = "kmcbest.aves"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
