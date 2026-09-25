@@ -22,6 +22,7 @@ import 'package:aves/widgets/viewer/info/metadata/metadata_section.dart';
 import 'package:aves/widgets/viewer/multipage/conductor.dart';
 import 'package:aves/widgets/viewer/page_entry_builder.dart';
 import 'package:aves_model/aves_model.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -163,6 +164,9 @@ class _InfoPageContentState extends State<_InfoPageContent> {
   final ValueNotifier<Map<String, MetadataDirectory>> _metadataNotifier = ValueNotifier({});
   final ValueNotifier<EntryAction?> _isEditingMetadataNotifier = ValueNotifier(null);
 
+  final GlobalKey _xmpKey = GlobalKey();
+  bool _shouldScrollToXmp = true;
+
   static const _basicSectionVisibilityRatio = .2;
   static const _metadataSectionVisibilityRatio = .5;
   static const _colorSectionVisibilityRatio = .8;
@@ -176,6 +180,7 @@ class _InfoPageContentState extends State<_InfoPageContent> {
   void initState() {
     super.initState();
     _registerWidget(widget);
+    _metadataNotifier.addListener(_onMetadataChanged);
     // necessary when animations are disabled and page is in full view from first frame
     _onPageInViewChanged();
   }
@@ -190,11 +195,13 @@ class _InfoPageContentState extends State<_InfoPageContent> {
       _isBasicSectionVisibleNotifier.value = false;
       _isMetadataSectionVisibleNotifier.value = false;
       _isColorSectionVisibleNotifier.value = false;
+      _shouldScrollToXmp = true;
     }
   }
 
   @override
   void dispose() {
+    _metadataNotifier.removeListener(_onMetadataChanged);
     _isBasicSectionVisibleNotifier.dispose();
     _isMetadataSectionVisibleNotifier.dispose();
     _isColorSectionVisibleNotifier.dispose();
@@ -219,9 +226,57 @@ class _InfoPageContentState extends State<_InfoPageContent> {
 
   void _onPageInViewChanged() {
     final inView = widget.pageInViewNotifier.value;
+    if (inView == 0) {
+      _shouldScrollToXmp = true;
+    } else {
+      _isBasicSectionVisibleNotifier.value = true;
+      _isMetadataSectionVisibleNotifier.value = true;
+      if (_shouldScrollToXmp) {
+        _scrollToXmp();
+      }
+    }
     _isBasicSectionVisibleNotifier.value |= inView > _basicSectionVisibilityRatio;
     _isMetadataSectionVisibleNotifier.value |= inView > _metadataSectionVisibilityRatio;
     _isColorSectionVisibleNotifier.value |= inView > _colorSectionVisibilityRatio;
+  }
+
+  void _onMetadataChanged() {
+    if (_shouldScrollToXmp && widget.pageInViewNotifier.value > 0) {
+      _scrollToXmp();
+    }
+  }
+
+  void _scrollToXmp([int attempt = 0]) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.pageInViewNotifier.value == 0) return;
+
+      final targetContext = _xmpKey.currentContext;
+      if (targetContext != null) {
+        final renderBox = targetContext.findRenderObject();
+        if (renderBox is RenderBox && renderBox.hasSize) {
+          final viewport = RenderAbstractViewport.of(renderBox);
+          if (widget.scrollController.hasClients) {
+            final targetOffset = viewport.getOffsetToReveal(renderBox, 0.0).offset;
+            final maxScroll = widget.scrollController.position.maxScrollExtent;
+            final offset = targetOffset.clamp(0.0, maxScroll);
+            if (offset > 0) {
+              widget.scrollController.jumpTo(offset);
+              _shouldScrollToXmp = false;
+              return;
+            }
+          }
+        }
+      }
+
+      if (_shouldScrollToXmp && attempt < 10) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted && _shouldScrollToXmp && widget.pageInViewNotifier.value > 0) {
+            _scrollToXmp(attempt + 1);
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -308,6 +363,7 @@ class _InfoPageContentState extends State<_InfoPageContent> {
                       sliver: MetadataSectionSliver(
                         entry: entry,
                         metadataNotifier: _metadataNotifier,
+                        xmpKey: _xmpKey,
                       ),
                     )
                   : const SliverToBoxAdapter(child: SizedBox());
