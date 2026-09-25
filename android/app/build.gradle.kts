@@ -118,6 +118,10 @@ android {
         resValues = true
     }
 
+    androidResources {
+        noCompress += "tflite"
+    }
+
     buildTypes {
         getByName("debug") {
             applicationIdSuffix = ".debug"
@@ -205,7 +209,7 @@ repositories {
     maven {
         url = uri("https://s3.amazonaws.com/repo.commonsware.com")
         content {
-            excludeGroupByRegex("com\\.github\\.deckerst.*")
+            includeGroup("com.commonsware.cwac")
         }
     }
 }
@@ -245,6 +249,9 @@ dependencies {
     implementation(libs.deckerst.mp4parser.muxer)
     implementation(libs.deckerst.pixymeta)
     implementation(project(":exifinterface"))
+
+    implementation(libs.mlkit.face.detection)
+    implementation(libs.tensorflow.lite)
 
     testImplementation(libs.junit)
 

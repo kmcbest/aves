@@ -6,8 +6,10 @@ import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/metadata/address.dart';
 import 'package:aves/model/metadata/catalog.dart';
 import 'package:aves/model/metadata/trash.dart';
+import 'package:aves/model/face/face_row.dart';
 import 'package:aves/model/vaults/details.dart';
 import 'package:aves/model/viewer/video_playback.dart';
+import 'package:aves/services/face_service.dart';
 
 abstract class LocalMediaDb {
   int get nextId;
@@ -141,4 +143,16 @@ abstract class LocalMediaDb {
   Future<List<String>> loadAllDebugLog();
 
   Future<void> addDebugLog(String message);
+
+  // faces
+
+  Future<void> clearFaces();
+
+  Future<List<FaceRow>> loadAllFaces();
+
+  Future<List<FaceRow>> loadFacesByEntryId(int entryId);
+
+  Future<void> saveFaces(int entryId, List<FaceDetection> faces);
+
+  Future<void> removeFacesByEntryId(Set<int> entryIds);
 }

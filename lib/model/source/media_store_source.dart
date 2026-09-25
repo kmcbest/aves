@@ -10,6 +10,7 @@ import 'package:aves/model/grouping/common.dart';
 import 'package:aves/model/settings/settings.dart';
 import 'package:aves/model/source/analysis_controller.dart';
 import 'package:aves/model/source/collection_source.dart';
+import 'package:aves/model/face/face_manager.dart';
 import 'package:aves/model/vaults/vaults.dart';
 import 'package:aves/services/common/services.dart';
 import 'package:aves/theme/durations.dart';
@@ -70,6 +71,7 @@ class MediaStoreSource extends CollectionSource {
     tagGrouping.registerSource(this);
     await covers.init();
     await dynamicAlbums.init();
+    await faceManager.init();
 
     final deviceOffset = DateTime.now().timeZoneOffset.inMilliseconds;
     final catalogOffset = settings.catalogTimeZoneOffsetMillis;

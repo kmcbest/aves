@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:aves/model/covers.dart';
 import 'package:aves/model/db/db.dart';
+import 'package:aves/model/db/db_extension.dart';
 import 'package:aves/model/db/db_sqflite_schema.dart';
 import 'package:aves/model/db/db_sqflite_upgrade.dart';
 import 'package:aves/model/dynamic_albums.dart';
@@ -11,9 +12,11 @@ import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/metadata/address.dart';
 import 'package:aves/model/metadata/catalog.dart';
 import 'package:aves/model/metadata/trash.dart';
+import 'package:aves/model/face/face_row.dart';
 import 'package:aves/model/vaults/details.dart';
 import 'package:aves/model/viewer/video_playback.dart';
 import 'package:aves/services/common/services.dart';
+import 'package:aves/services/face_service.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
@@ -35,6 +38,7 @@ class SqfliteLocalMediaDb implements LocalMediaDb {
   static const trashTable = SqfliteLocalMediaDbSchema.trashTable;
   static const videoPlaybackTable = SqfliteLocalMediaDbSchema.videoPlaybackTable;
   static const debugTable = SqfliteLocalMediaDbSchema.debugTable;
+  static const faceTable = SqfliteLocalMediaDbSchema.faceTable;
 
   static const _entryInsertSliceMaxCount = 10000; // number of entries
   static const _queryCursorBufferSize = 1000; // number of rows
@@ -49,8 +53,12 @@ class SqfliteLocalMediaDb implements LocalMediaDb {
       await path,
       onCreate: (db, version) => SqfliteLocalMediaDbSchema.createLatestVersion(db),
       onUpgrade: LocalMediaDbUpgrader.upgradeDb,
-      version: 16,
+      version: 17,
     );
+
+    if (!await _db.tableExists(faceTable)) {
+      await SqfliteLocalMediaDbSchema.createTable(_db, faceTable);
+    }
 
     final maxIdRows = await _db.rawQuery('SELECT MAX(id) AS maxId FROM $entryTable');
     _lastId = (maxIdRows.firstOrNull?['maxId'] as int?) ?? 0;
@@ -97,6 +105,7 @@ class SqfliteLocalMediaDb implements LocalMediaDb {
         batch.delete(coverTable, where: coverWhere, whereArgs: whereArgs);
         batch.delete(trashTable, where: where, whereArgs: whereArgs);
         batch.delete(videoPlaybackTable, where: where, whereArgs: whereArgs);
+        batch.delete(faceTable, where: coverWhere, whereArgs: whereArgs);
       }
     });
     await batch.commit(noResult: true);
@@ -119,6 +128,50 @@ class SqfliteLocalMediaDb implements LocalMediaDb {
   @override
   Future<void> addDebugLog(String message) async {
     await _db.insert(debugTable, {'message': message});
+  }
+
+  // faces
+
+  @override
+  Future<void> clearFaces() async {
+    final count = await _db.delete(faceTable, where: '1');
+    debugPrint('$runtimeType clearFaces deleted $count rows');
+  }
+
+  @override
+  Future<List<FaceRow>> loadAllFaces() async {
+    final rows = await _db.query(faceTable);
+    return rows.map(FaceRow.fromMap).toList();
+  }
+
+  @override
+  Future<List<FaceRow>> loadFacesByEntryId(int entryId) async {
+    final rows = await _db.query(faceTable, where: 'entryId = ?', whereArgs: [entryId]);
+    return rows.map(FaceRow.fromMap).toList();
+  }
+
+  @override
+  Future<void> saveFaces(int entryId, List<FaceDetection> faces) async {
+    final batch = _db.batch();
+    batch.delete(faceTable, where: 'entryId = ?', whereArgs: [entryId]);
+    for (final face in faces) {
+      final row = FaceRow(
+        id: 0,
+        entryId: entryId,
+        bounds: face.bounds,
+        embedding: face.embedding,
+      );
+      batch.insert(faceTable, row.toMap());
+    }
+    await batch.commit(noResult: true);
+  }
+
+  @override
+  Future<void> removeFacesByEntryId(Set<int> entryIds) async {
+    if (entryIds.isEmpty) return;
+    final batch = _db.batch();
+    entryIds.forEach((id) => batch.delete(faceTable, where: 'entryId = ?', whereArgs: [id]));
+    await batch.commit(noResult: true);
   }
 
   // entries

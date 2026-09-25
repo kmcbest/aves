@@ -56,6 +56,8 @@ class LocalMediaDbUpgrader {
           await _upgradeFrom14(db);
         case 15:
           await _upgradeFrom15(db);
+        case 16:
+          await _upgradeFrom16(db);
       }
       oldVersion++;
     }
@@ -579,5 +581,11 @@ class LocalMediaDbUpgrader {
       ', message TEXT'
       ')',
     );
+  }
+
+  static Future<void> _upgradeFrom16(Database db) async {
+    debugPrint('upgrading DB from v16');
+
+    await SqfliteLocalMediaDbSchema.createTable(db, SqfliteLocalMediaDbSchema.faceTable);
   }
 }

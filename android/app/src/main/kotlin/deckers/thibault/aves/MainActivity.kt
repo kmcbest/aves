@@ -34,6 +34,7 @@ import deckers.thibault.aves.channel.calls.Coresult.Companion.safe
 import deckers.thibault.aves.channel.calls.DebugHandler
 import deckers.thibault.aves.channel.calls.DeviceHandler
 import deckers.thibault.aves.channel.calls.EmbeddedDataHandler
+import deckers.thibault.aves.channel.calls.FaceHandler
 import deckers.thibault.aves.channel.calls.GeocodingHandler
 import deckers.thibault.aves.channel.calls.GlobalSearchHandler
 import deckers.thibault.aves.channel.calls.HomeWidgetHandler
@@ -196,6 +197,7 @@ open class MainActivity : FlutterFragmentActivity() {
         MethodChannel(messenger, DebugHandler.CHANNEL).setMethodCallHandler(DebugHandler(this))
         MethodChannel(messenger, DeviceHandler.CHANNEL).setMethodCallHandler(DeviceHandler(this))
         MethodChannel(messenger, EmbeddedDataHandler.CHANNEL).setMethodCallHandler(EmbeddedDataHandler(this))
+        MethodChannel(messenger, FaceHandler.CHANNEL).setMethodCallHandler(FaceHandler(this))
         MethodChannel(messenger, GeocodingHandler.CHANNEL).setMethodCallHandler(GeocodingHandler(this))
         MethodChannel(messenger, GlobalSearchHandler.CHANNEL).setMethodCallHandler(GlobalSearchHandler(this))
         MethodChannel(messenger, HomeWidgetHandler.CHANNEL).setMethodCallHandler(HomeWidgetHandler(this))

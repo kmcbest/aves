@@ -27,6 +27,9 @@ pixymeta = "f4513291b7"
 slf4j = "2.0.19"
 tiffBitmapFactory = "424b18a4ae"
 reproducibleBuilds = "1.1"
+mlkitFaceDetection = "16.1.7"
+tensorflowLite = "2.16.1"
+tensorflowLiteSupport = "0.4.4"
 
 [libraries]
 android-desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugarJdkLibs" }
@@ -55,6 +58,9 @@ junit = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "juni
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadataExtractor" }
+mlkit-face-detection = { module = "com.google.mlkit:face-detection", version.ref = "mlkitFaceDetection" }
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflowLite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
 slf4j = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 [plugins]

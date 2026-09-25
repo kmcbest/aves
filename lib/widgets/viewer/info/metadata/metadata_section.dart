@@ -19,11 +19,13 @@ import 'package:provider/provider.dart';
 class MetadataSectionSliver extends StatefulWidget {
   final AvesEntry entry;
   final ValueNotifier<Map<String, MetadataDirectory>> metadataNotifier;
+  final GlobalKey? xmpKey;
 
   const new({
     super.key,
     required this.entry,
     required this.metadataNotifier,
+    this.xmpKey,
   });
 
   @override
@@ -117,19 +119,28 @@ class _MetadataSectionSliverState extends State<MetadataSectionSliver> {
                           ),
                         ]
                       : [
-                          const SectionRow(
+                          SectionRow(
+                            key: !metadata.values.any((dir) => dir.name == MetadataDirectory.xmpDirectory) ? widget.xmpKey : null,
                             icon: AIcons.info,
-                            padding: EdgeInsets.only(top: 24, bottom: 8),
+                            padding: const EdgeInsets.only(top: 24, bottom: 8),
                           ),
-                          ...metadata.entries.map(
-                            (kv) => MetadataDirTile(
+                          ...metadata.entries.map((kv) {
+                            final isXmp = kv.value.name == MetadataDirectory.xmpDirectory;
+                            final tile = MetadataDirTile(
                               entry: entry,
                               title: kv.key,
                               dir: kv.value,
                               expandedDirectoryNotifier: _expandedDirectoryNotifier,
-                              initiallyExpanded: kv.value.name == MetadataDirectory.xmpDirectory,
-                            ),
-                          ),
+                              initiallyExpanded: isXmp,
+                            );
+                            if (isXmp && widget.xmpKey != null) {
+                              return KeyedSubtree(
+                                key: widget.xmpKey,
+                                child: tile,
+                              );
+                            }
+                            return tile;
+                          }),
                         ],
                 ),
               );

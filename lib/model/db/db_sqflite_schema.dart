@@ -12,6 +12,7 @@ class SqfliteLocalMediaDbSchema {
   static const trashTable = 'trash';
   static const videoPlaybackTable = 'videoPlayback';
   static const debugTable = 'debug';
+  static const faceTable = 'faces';
 
   static const allTables = [
     entryTable,
@@ -25,6 +26,7 @@ class SqfliteLocalMediaDbSchema {
     trashTable,
     videoPlaybackTable,
     debugTable,
+    faceTable,
   ];
 
   static Future<void> createLatestVersion(Database db) async {
@@ -140,6 +142,23 @@ class SqfliteLocalMediaDbSchema {
           ', message TEXT'
           ')',
         );
+      case faceTable:
+        return db.transaction((txn) async {
+          await txn.execute(
+            'CREATE TABLE IF NOT EXISTS $faceTable('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT'
+            ', entryId INTEGER'
+            ', xMin REAL'
+            ', yMin REAL'
+            ', xMax REAL'
+            ', yMax REAL'
+            ', embedding BLOB'
+            ')',
+          );
+          await txn.execute(
+            'CREATE INDEX IF NOT EXISTS idx_faces_entryId ON $faceTable(entryId)',
+          );
+        });
       default:
         throw Exception('unknown table=$table');
     }

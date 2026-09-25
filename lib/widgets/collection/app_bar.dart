@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:aves/app_mode.dart';
 import 'package:aves/model/entry/entry.dart';
+import 'package:aves/model/entry/extensions/props.dart';
+import 'package:aves/model/face/face_manager.dart';
 import 'package:aves/model/filters/container/dynamic_album.dart';
 import 'package:aves/model/filters/container/set_and.dart';
+import 'package:aves/model/filters/covered/tag.dart';
 import 'package:aves/model/filters/filters.dart';
 import 'package:aves/model/filters/query.dart';
 import 'package:aves/model/filters/trash.dart';
+import 'package:aves/widgets/viewer/info/face_search_result_page.dart';
 import 'package:aves/model/query.dart';
 import 'package:aves/model/selection.dart';
 import 'package:aves/model/settings/enums/accessibility_animations.dart';
@@ -488,7 +493,14 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
 
     final l10n = context.l10n;
     final animations = context.select<Settings, AccessibilityAnimations>((v) => v.accessibilityAnimations);
+    final hasActiveTag = !isSelecting && collection.filters.any((f) => f is TagFilter && f.tag.isNotEmpty);
     return [
+      if (hasActiveTag)
+        IconButton(
+          icon: const Icon(Icons.face_retouching_natural),
+          tooltip: '以脸搜寻更多此人照片',
+          onPressed: () => _findMorePhotosByFace(context),
+        ),
       ...quickActionButtons,
       PopupMenuButton<EntrySetAction>(
         // key is expected by test driver
@@ -559,6 +571,54 @@ class _CollectionAppBarState extends State<CollectionAppBar> with RouteAware, Si
         popUpAnimationStyle: animations.popUpAnimationStyle,
       ),
     ];
+  }
+
+  Future<void> _findMorePhotosByFace(BuildContext context) async {
+    final tagFilter = collection.filters.whereType<TagFilter>().firstOrNull;
+    if (tagFilter == null) return;
+    final tag = tagFilter.tag;
+
+    final taggedEntries = collection.source.visibleEntries.where((e) => e.tags.contains(tag) && e.isImage).toList();
+    if (taggedEntries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前标签下没有照片')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('正在分析 "$tag" 的人脸特征...')),
+    );
+
+    final embeddings = <Float32List>[];
+    for (final entry in taggedEntries.take(15)) {
+      final faces = await faceManager.getFaces(entry, detectIfMissing: true);
+      for (final face in faces) {
+        embeddings.add(face.embedding);
+      }
+    }
+
+    if (embeddings.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('在 "$tag" 的照片中未提取到有效人脸')),
+        );
+      }
+      return;
+    }
+
+    final centroid = faceManager.computeCentroid(embeddings);
+    if (context.mounted) {
+      Navigator.maybeOf(context)?.push(
+        MaterialPageRoute(
+          builder: (context) => FaceSearchResultPage(
+            customEmbedding: centroid,
+            initialTagName: tag,
+            source: collection.source,
+          ),
+        ),
+      );
+    }
   }
 
   Set<AvesEntry> _getExpandedSelectedItems(Selection<AvesEntry> selection) {
