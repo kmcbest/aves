@@ -58,3 +58,5 @@ app.*.map.json
 *.docx
 startup_profile.json
 /*.png
+
+releases/
