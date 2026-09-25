@@ -45,6 +45,7 @@ mixin TagMixin on SourceBase {
     saved.forEach((metadata) => getEntryById(metadata.id)?.catalogMetadata = metadata);
     invalidateEntries();
     onCatalogMetadataChanged();
+    _computeTags();
   }
 
   static bool catalogEntriesTest(AvesEntry entry) => !entry.isCatalogued;

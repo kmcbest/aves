@@ -23,6 +23,8 @@ import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import android.view.View
+import android.view.ViewGroup
 import app.loup.streams_channel.StreamsChannel
 import deckers.thibault.aves.channel.calls.AccessibilityHandler
 import deckers.thibault.aves.channel.calls.AnalysisHandler
@@ -89,6 +91,21 @@ open class MainActivity : FlutterFragmentActivity() {
     private lateinit var analysisHandler: AnalysisHandler<MainActivity>
     private lateinit var mediaSessionHandler: MediaSessionHandler
 
+    private var lastStatusBarVisible: Boolean? = null
+    private var lastNavBarVisible: Boolean? = null
+
+    private fun disableWindowInsetsAnimationCallback(view: View?) {
+        if (view == null) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.setWindowInsetsAnimationCallback(null)
+            if (view is ViewGroup) {
+                for (i in 0 until view.childCount) {
+                    disableWindowInsetsAnimationCallback(view.getChildAt(i))
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.i(LOG_TAG, "onCreate intent=$intent")
         logExtras(intent, "onCreate")
@@ -110,12 +127,27 @@ open class MainActivity : FlutterFragmentActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
             val insets = ViewCompat.onApplyWindowInsets(view, windowInsets)
-            notifySystemBarVisibilityChange(
-                statusBarVisible = windowInsets.isVisible(WindowInsetsCompat.Type.statusBars()),
-                navBarVisible = windowInsets.isVisible(WindowInsetsCompat.Type.navigationBars()),
-            )
+            val statusBarVisible = windowInsets.isVisible(WindowInsetsCompat.Type.statusBars())
+            val navBarVisible = windowInsets.isVisible(WindowInsetsCompat.Type.navigationBars())
+            if (statusBarVisible != lastStatusBarVisible || navBarVisible != lastNavBarVisible) {
+                lastStatusBarVisible = statusBarVisible
+                lastNavBarVisible = navBarVisible
+                notifySystemBarVisibilityChange(
+                    statusBarVisible = statusBarVisible,
+                    navBarVisible = navBarVisible,
+                )
+            }
             insets
         }
+
+        window.decorView.viewTreeObserver.addOnGlobalLayoutListener {
+            disableWindowInsetsAnimationCallback(window.decorView)
+        }
+    }
+
+    override fun onPostResume() {
+        super.onPostResume()
+        disableWindowInsetsAnimationCallback(window.decorView)
     }
 
     private fun logExtras(intent: Intent?, method: String) {

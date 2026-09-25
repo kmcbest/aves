@@ -51,15 +51,12 @@ class _TagEditorPageState extends State<TagEditorPage> {
     _expandedSectionNotifier.value = settings.tagEditorExpandedSection;
     _expandedSectionNotifier.addListener(() => settings.tagEditorExpandedSection = _expandedSectionNotifier.value);
     _initTopTags();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final source = context.read<CollectionSource?>();
-      settings.removeObsoleteRecentTags(source);
-    });
   }
 
   @override
   void dispose() {
+    final source = context.read<CollectionSource?>();
+    settings.removeObsoleteRecentTags(source);
     _newTagTextController.dispose();
     _newTagTextFocusNode.dispose();
     _expandedSectionNotifier.dispose();
@@ -245,7 +242,7 @@ class _TagEditorPageState extends State<TagEditorPage> {
     if (!source.tagsDirty) {
       _topTags = source.topTagFilters;
     } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 350), () {
         if (!mounted) return;
         setState(() {
           _topTags = source.topTagFilters;
