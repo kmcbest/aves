@@ -762,7 +762,7 @@ class EntrySetActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAware
     final entries = await _getEditableTargetItems(context, canEdit: (entry) => entry.canEditTags);
     if (entries == null || entries.isEmpty) return;
 
-    final newTagsByEntry = await selectTags(context, entries);
+    final (newTagsByEntry, _) = await selectTags(context, entries);
     if (newTagsByEntry == null) return;
 
     await _doEditTags(context, newTagsByEntry);

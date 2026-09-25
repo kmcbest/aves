@@ -263,12 +263,19 @@ class _InfoPageContentState extends State<_InfoPageContent> {
             ),
           );
 
-    return NotificationListener<SelectFilterNotification>(
-      onNotification: (notification) {
-        _onFilterSelection(notification.filter);
-        return true;
-      },
-      child: CustomScrollView(
+    return MultiProvider(
+      providers: [
+        Provider<AvesEntry>.value(value: entry),
+        Provider<AvesEntry?>.value(value: entry),
+        Provider<EntryInfoActionDelegate>.value(value: _actionDelegate),
+        Provider<EntryInfoActionDelegate?>.value(value: _actionDelegate),
+      ],
+      child: NotificationListener<SelectFilterNotification>(
+        onNotification: (notification) {
+          _onFilterSelection(notification.filter);
+          return true;
+        },
+        child: CustomScrollView(
         controller: widget.scrollController,
         slivers: [
           const SliverToBoxAdapter(
@@ -321,8 +328,9 @@ class _InfoPageContentState extends State<_InfoPageContent> {
           const BottomPaddingSliver(),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _onActionDelegateEvent(ActionEvent<EntryAction> event) {
     Future.delayed(ADurations.dialogTransitionLoose).then((_) {

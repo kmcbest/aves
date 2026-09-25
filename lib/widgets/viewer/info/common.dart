@@ -1,11 +1,18 @@
 import 'dart:math';
 
+import 'package:aves/model/entry/entry.dart';
+import 'package:aves/model/entry/extensions/props.dart';
+import 'package:aves/theme/icons.dart';
 import 'package:aves/widgets/common/basic/link_chip.dart';
+import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/common/identity/aves_filter_chip.dart';
+import 'package:aves/widgets/viewer/action/entry_info_action_delegate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
 class SectionRow extends StatelessWidget {
   final IconData icon;
@@ -47,6 +54,7 @@ class SectionRow extends StatelessWidget {
 }
 
 class InfoRowGroup extends StatefulWidget {
+  final AvesEntry? entry;
   final Map<String, String> info;
   final int maxValueLength;
   final Map<String, InfoValueSpanBuilder> spanBuilders;
@@ -64,6 +72,7 @@ class InfoRowGroup extends StatefulWidget {
 
   const new({
     super.key,
+    this.entry,
     required this.info,
     this.maxValueLength = defaultMaxValueLength,
     Map<String, InfoValueSpanBuilder>? spanBuilders,
@@ -171,8 +180,81 @@ class _InfoRowGroupState extends State<InfoRowGroup> {
             ).toList(),
           ),
           style: InfoRowGroup.valueStyle,
+          contextMenuBuilder: _buildContextMenu,
         );
       },
+    );
+  }
+
+  Widget _buildContextMenu(BuildContext menuContext, EditableTextState editableTextState) {
+    final hostContext = mounted ? context : menuContext;
+    AvesEntry? entry;
+    EntryInfoActionDelegate? actionDelegate;
+    try {
+      entry = widget.entry ?? hostContext.read<AvesEntry?>();
+      actionDelegate = hostContext.read<EntryInfoActionDelegate?>();
+    } catch (_) {}
+
+    final value = editableTextState.textEditingValue;
+    final rawSelected = value.selection.textInside(value.text);
+    final selectedText = rawSelected.replaceAll(RegExp(r'[\u2068\u2069]'), '').trim();
+
+    final buttonItems = editableTextState.contextMenuButtonItems;
+    if (entry == null || actionDelegate == null || !entry.canEditTags || selectedText.isEmpty) {
+      return AdaptiveTextSelectionToolbar.buttonItems(
+        anchors: editableTextState.contextMenuAnchors,
+        buttonItems: buttonItems,
+      );
+    }
+
+    void onTagPressed() {
+      editableTextState.hideToolbar();
+      Clipboard.setData(ClipboardData(text: selectedText));
+      actionDelegate!.editTags(hostContext, entry!, initialText: selectedText);
+    }
+
+    final platform = Theme.of(hostContext).platform;
+    if (platform == TargetPlatform.android || platform == TargetPlatform.fuchsia) {
+      final totalCount = buttonItems.length + 1;
+      final buttons = <Widget>[
+        TextSelectionToolbarTextButton(
+          padding: TextSelectionToolbarTextButton.getPadding(0, totalCount),
+          onPressed: onTagPressed,
+          alignment: AlignmentDirectional.centerStart,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(AIcons.tag, size: 18),
+              const SizedBox(width: 4),
+              Text(hostContext.l10n.tagPageTitle),
+            ],
+          ),
+        ),
+        for (var i = 0; i < buttonItems.length; i++)
+          TextSelectionToolbarTextButton(
+            padding: TextSelectionToolbarTextButton.getPadding(i + 1, totalCount),
+            onPressed: buttonItems[i].onPressed,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(AdaptiveTextSelectionToolbar.getButtonLabel(hostContext, buttonItems[i])),
+          ),
+      ];
+      return AdaptiveTextSelectionToolbar(
+        anchors: editableTextState.contextMenuAnchors,
+        children: buttons,
+      );
+    }
+
+    buttonItems.insert(
+      0,
+      ContextMenuButtonItem(
+        onPressed: onTagPressed,
+        type: ContextMenuButtonType.custom,
+        label: '🏷️ ${context.l10n.tagPageTitle}',
+      ),
+    );
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: editableTextState.contextMenuAnchors,
+      buttonItems: buttonItems,
     );
   }
 

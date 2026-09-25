@@ -16,14 +16,27 @@ import 'package:aves/widgets/dialogs/aves_confirmation_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+@immutable
+class TagEditorResult {
+  final Map<AvesEntry, Set<CollectionFilter>> filtersByEntry;
+  final bool goToNext;
+
+  const new({
+    required this.filtersByEntry,
+    this.goToNext = false,
+  });
+}
+
 class TagEditorPage extends StatefulWidget {
   static const routeName = '/info/tag_editor';
 
   final Map<AvesEntry, Set<TagFilter>> tagsByEntry;
+  final String? initialText;
 
   const new({
     super.key,
     required this.tagsByEntry,
+    this.initialText,
   });
 
   @override
@@ -51,6 +64,13 @@ class _TagEditorPageState extends State<TagEditorPage> {
     _expandedSectionNotifier.value = settings.tagEditorExpandedSection;
     _expandedSectionNotifier.addListener(() => settings.tagEditorExpandedSection = _expandedSectionNotifier.value);
     _initTopTags();
+    final initialText = widget.initialText;
+    if (initialText != null && initialText.isNotEmpty) {
+      _newTagTextController.value = TextEditingValue(
+        text: initialText,
+        selection: TextSelection.collapsed(offset: initialText.length),
+      );
+    }
   }
 
   @override
@@ -99,7 +119,7 @@ class _TagEditorPageState extends State<TagEditorPage> {
             ),
             IconButton(
               icon: const Icon(AIcons.apply),
-              onPressed: () => Navigator.maybeOf(context)?.pop<Map<AvesEntry, Set<CollectionFilter>>>(filtersByEntry),
+              onPressed: () => Navigator.maybeOf(context)?.pop<TagEditorResult>(TagEditorResult(filtersByEntry: filtersByEntry, goToNext: false)),
               tooltip: l10n.saveTooltip,
             ),
             const SizedBox(width: 16),
@@ -206,7 +226,22 @@ class _TagEditorPageState extends State<TagEditorPage> {
                           duration: ADurations.tagEditorTransition,
                         ),
                       ),
-                      const ThinDivider(),
+                      if (filtersByEntry.length == 1)
+                        Row(
+                          children: [
+                            const Expanded(child: ThinDivider()),
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 4),
+                              child: IconButton(
+                                icon: const Icon(AIcons.next),
+                                onPressed: () => Navigator.maybeOf(context)?.pop<TagEditorResult>(TagEditorResult(filtersByEntry: filtersByEntry, goToNext: true)),
+                                tooltip: l10n.nextTooltip,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        const ThinDivider(),
                       _FilterRow(
                         title: l10n.statsTopTagsSectionTitle,
                         filters: topTagFilters,

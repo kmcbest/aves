@@ -10,6 +10,7 @@ import 'package:aves/widgets/viewer/info/common.dart';
 import 'package:aves/widgets/viewer/info/metadata/metadata_dir.dart';
 import 'package:aves/widgets/viewer/info/metadata/metadata_dir_tile.dart';
 import 'package:aves/widgets/viewer/info/metadata/tv_page.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:material_ui/material_ui.dart';
@@ -126,6 +127,7 @@ class _MetadataSectionSliverState extends State<MetadataSectionSliver> {
                               title: kv.key,
                               dir: kv.value,
                               expandedDirectoryNotifier: _expandedDirectoryNotifier,
+                              initiallyExpanded: kv.value.name == MetadataDirectory.xmpDirectory,
                             ),
                           ),
                         ],
@@ -154,6 +156,7 @@ class _MetadataSectionSliverState extends State<MetadataSectionSliver> {
     final titledDirectories = await entry.getMetadataDirectories(context);
     if (!mounted) return;
     metadataNotifier.value = Map.fromEntries(titledDirectories);
-    _expandedDirectoryNotifier.value = null;
+    final xmpEntry = titledDirectories.firstWhereOrNull((kv) => kv.value.name == MetadataDirectory.xmpDirectory);
+    _expandedDirectoryNotifier.value = xmpEntry?.key;
   }
 }

@@ -64,7 +64,14 @@ extension ExtraAvesEntryInfo on AvesEntry {
         title += ' ${dir.index}';
       }
       return MapEntry(title, dir);
-    }).toList()..sort((a, b) => compareAsciiUpperCase(a.key, b.key));
+    }).toList()..sort((a, b) {
+      final aIsXmp = a.value.name == MetadataDirectory.xmpDirectory;
+      final bIsXmp = b.value.name == MetadataDirectory.xmpDirectory;
+      if (aIsXmp != bIsXmp) {
+        return aIsXmp ? -1 : 1;
+      }
+      return compareAsciiUpperCase(a.key, b.key);
+    });
 
     return titledDirectories;
   }

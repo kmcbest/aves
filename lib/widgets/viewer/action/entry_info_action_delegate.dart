@@ -20,6 +20,7 @@ import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/dialogs/aves_confirmation_dialog.dart';
 import 'package:aves/widgets/map/map_page.dart';
 import 'package:aves/widgets/viewer/action/single_entry_editor.dart';
+import 'package:aves/widgets/viewer/controls/notifications.dart';
 import 'package:aves/widgets/viewer/debug/debug_page.dart';
 import 'package:aves/widgets/viewer/info/embedded/notifications.dart';
 import 'package:aves_model/aves_model.dart';
@@ -113,7 +114,7 @@ class EntryInfoActionDelegate with FeedbackMixin, PermissionAwareMixin, EntryEdi
       case .editRating:
         await _editRating(context, targetEntry);
       case .editTags:
-        await _editTags(context, targetEntry);
+        await editTags(context, targetEntry);
       case .removeMetadata:
         await _removeMetadata(context, targetEntry);
       case .exportMetadata:
@@ -171,12 +172,17 @@ class EntryInfoActionDelegate with FeedbackMixin, PermissionAwareMixin, EntryEdi
     await edit(context, targetEntry, () => targetEntry.editRating(rating));
   }
 
-  Future<void> _editTags(BuildContext context, AvesEntry targetEntry) async {
-    final tagsByEntry = await selectTags(context, {targetEntry});
+  Future<void> editTags(BuildContext context, AvesEntry targetEntry, {String? initialText}) async {
+    final (tagsByEntry, goToNext) = await selectTags(context, {targetEntry}, initialText: initialText);
     if (tagsByEntry == null) return;
 
     final newTags = tagsByEntry[targetEntry] ?? targetEntry.tags;
     await _applyTags(context, targetEntry, newTags);
+
+    if (goToNext && context.mounted) {
+      ShowImageNotification().dispatch(context);
+      const ShowNextEntryNotification(animate: true).dispatch(context);
+    }
   }
 
   Future<void> quickTag(BuildContext context, AvesEntry targetEntry, CollectionFilter filter) async {
